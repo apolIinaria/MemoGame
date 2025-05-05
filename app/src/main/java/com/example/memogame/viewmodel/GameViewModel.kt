@@ -22,7 +22,7 @@ class GameViewModel(
     private val repository: GameRepository,
     internal val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val levelId: Int = checkNotNull(savedStateHandle["levelId"])
+    private val levelId: Int = savedStateHandle.get<Int>("levelId") ?: 1
     private val gameTimer = GameTimer(viewModelScope)
 
     val level: StateFlow<Level?> = repository.getLevel(levelId).stateIn(
