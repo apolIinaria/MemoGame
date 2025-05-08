@@ -3,6 +3,7 @@ package com.example.memogame.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.memogame.data.entity.UserEntity
 import com.example.memogame.model.Level
 import com.example.memogame.data.repository.GameRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,6 +15,13 @@ class LevelSelectionViewModel(private val repository: GameRepository) : ViewMode
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
         emptyList()
+    )
+
+    // Додаємо доступ до інформації про користувача
+    val user: StateFlow<UserEntity> = repository.user.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        UserEntity()
     )
 
     class Factory(private val repository: GameRepository) : ViewModelProvider.Factory {
