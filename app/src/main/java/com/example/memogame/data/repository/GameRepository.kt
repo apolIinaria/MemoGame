@@ -6,6 +6,7 @@ import com.example.memogame.data.entity.LevelEntity
 import com.example.memogame.data.entity.UserEntity
 import com.example.memogame.model.Level
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class GameRepository(
@@ -39,9 +40,20 @@ class GameRepository(
     }
 
     suspend fun updateLevelScore(levelId: Int, stars: Int, time: Long) {
-        levelDao.updateLevelScore(levelId, stars, time)
-        if (stars > 0) {
-            userDao.addStars(stars)
+        // Отримуємо поточний рівень
+        val currentLevel = levelDao.getLevel(levelId).first()
+
+        // Обчислюємо, скільки нових зірок було отримано
+        val newStars = stars - currentLevel.stars
+
+        // Оновлюємо рівень лише якщо результат кращий
+        // (це забезпечується умовою в SQL-запиті у LevelDao)
+        val updated = levelDao.updateLevelScore(levelId, stars, time)
+
+        // Додаємо лише нові зірки до загального рахунку,
+        // і тільки якщо результат реально покращився (updated > 0)
+        if (newStars > 0 && updated > 0) {
+            userDao.addStars(newStars)
         }
     }
 }

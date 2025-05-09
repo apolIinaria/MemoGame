@@ -81,4 +81,41 @@ class MemoGameApplication : Application() {
             return (context.applicationContext as MemoGameApplication).repository
         }
     }
+
+    /**
+     * Скидає базу даних повністю - видаляє її і створює нову
+     */
+    fun resetDatabase(onComplete: () -> Unit) {
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                // Закриваємо поточне з'єднання, якщо воно відкрите
+                if (database.isOpen) {
+                    database.close()
+                }
+
+                // Видаляємо базу даних
+                applicationContext.deleteDatabase("memo_game_database")
+
+                // Очищаємо посилання на базу для перестворення
+                AppDatabase.clearInstance()
+
+                // Переініціалізуємо базу даних (це запустить onCreate callback)
+                val newDb = AppDatabase.getDatabase(applicationContext, applicationScope)
+
+                // Виконуємо callback для повідомлення про завершення
+                launch(Dispatchers.Main) {
+                    onComplete()
+                }
+            } catch (e: Exception) {
+                println("Error resetting database: ${e.message}")
+                e.printStackTrace()
+
+                // Виконуємо callback навіть при помилці, щоб UI не залишався заблокованим
+                launch(Dispatchers.Main) {
+                    onComplete()
+                    showErrorToast("Помилка при скиданні бази даних")
+                }
+            }
+        }
+    }
 }

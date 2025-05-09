@@ -1,5 +1,6 @@
 package com.example.memogame.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,18 +18,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -68,6 +74,9 @@ fun MainScreen(
     val completedLevels by viewModel.completedLevels.collectAsState()
 
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -238,6 +247,25 @@ fun MainScreen(
 
                 Text("Про гру")
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Кнопка скидання прогресу
+            OutlinedButton(
+                onClick = { showResetDialog = true },
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Скинути прогрес"
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text("Скинути прогрес")
+            }
         }
 
         // Діалог "Про додаток"
@@ -309,6 +337,72 @@ fun MainScreen(
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.surface
+            )
+        }
+
+        // Діалог підтвердження скидання прогресу
+        if (showResetDialog) {
+            var isResetting by remember { mutableStateOf(false) }
+
+            AlertDialog(
+                onDismissRequest = {
+                    if (!isResetting) showResetDialog = false
+                },
+                title = { Text("Скинути прогрес?") },
+                text = {
+                    Column {
+                        Text("Ви дійсно хочете скинути весь прогрес гри? Цю дію неможливо скасувати.")
+
+                        if (isResetting) {
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Скидання...",
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            isResetting = true
+
+                            // Викликаємо метод скидання бази даних
+                            application.resetDatabase {
+                                isResetting = false
+                                showResetDialog = false
+
+                                // Показуємо повідомлення про успішне скидання
+                                Toast.makeText(
+                                    context,
+                                    "Прогрес скинуто успішно",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        enabled = !isResetting,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Так, скинути")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = { showResetDialog = false },
+                        enabled = !isResetting
+                    ) {
+                        Text("Скасувати")
+                    }
+                }
             )
         }
     }

@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,7 +34,9 @@ class GameViewModel(
         null
     )
 
-    val elapsedTime = gameTimer.elapsedTime
+    // Створюємо і експонуємо свій StateFlow для часу, щоб могти його змінювати
+    private val _elapsedTime = MutableStateFlow(0L)
+    val elapsedTime: StateFlow<Long> = _elapsedTime.asStateFlow()
 
     private val _cards = MutableStateFlow<List<Card>>(emptyList())
     val cards = _cards.asStateFlow()
@@ -57,11 +61,28 @@ class GameViewModel(
     // Використовуємо AtomicBoolean для надійного блокування взаємодії
     private val isProcessingMove = AtomicBoolean(false)
 
+    // Глобальне блокування кліків для запобігання швидким подвійним клікам
+    private val clickLock = AtomicBoolean(false)
+
     // Job для затримки перевороту карток назад
     private var flipBackJob: Job? = null
 
+    // Job для відстеження часу
+    private var timerJob: Job? = null
+
     init {
         initGame()
+        // Запускаємо Job для оновлення відображуваного часу
+        startTimerTracking()
+    }
+
+    private fun startTimerTracking() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            gameTimer.elapsedTime.collect { time ->
+                _elapsedTime.value = time
+            }
+        }
     }
 
     private fun initGame() {
@@ -72,58 +93,89 @@ class GameViewModel(
         firstCard = null
         secondCard = null
         isProcessingMove.set(false)
+        clickLock.set(false)
 
         viewModelScope.launch {
-            level.collect { level ->
-                if (level != null) {
-                    try {
-                        // Генеруємо картки і скидаємо лічильники
-                        _cards.value = CardGenerator.generateCards(level.cardCount)
-                        _moves.value = 0
+            try {
+                level.collect { level ->
+                    if (level != null) {
+                        try {
+                            // Генеруємо картки і скидаємо лічильники
+                            _cards.value = CardGenerator.generateCards(level.cardCount)
+                            _moves.value = 0
 
-                        // Показуємо картки на початку для запам'ятовування
-                        _isShowingCards.value = true
+                            // Показуємо картки на початку для запам'ятовування
+                            _isShowingCards.value = true
 
-                        // Затримка для запам'ятовування карток залежно від їх кількості
-                        val memorizeTime = when {
-                            level.cardCount <= 8 -> 2000L // 2 секунди для невеликої кількості
-                            level.cardCount <= 12 -> 3000L // 3 секунди для середньої кількості
-                            else -> 4000L // 4 секунди для великої кількості (зменшено з 5)
+                            // Затримка для запам'ятовування карток залежно від їх кількості
+                            val memorizeTime = when {
+                                level.cardCount <= 8 -> 2000L
+                                level.cardCount <= 12 -> 3000L
+                                else -> 4000L
+                            }
+
+                            delay(memorizeTime)
+
+                            // Перевіряємо чи корутина все ще активна
+                            if (!isActive) return@collect
+
+                            _isShowingCards.value = false
+
+                            // Перевертаємо всі картки і запускаємо таймер
+                            _cards.value = _cards.value.map { it.copy(isFlipped = false) }
+
+                            // Запускаємо таймер після того, як картки перевернулись
+                            delay(400) // Затримка для анімації перевороту
+
+                            // Перевіряємо чи корутина все ще активна
+                            if (!isActive) return@collect
+
+                            gameTimer.start()
+                        } catch (e: Exception) {
+                            // Обробка помилок генерації карток
+                            println("Помилка ініціалізації гри: ${e.message}")
                         }
-
-                        delay(memorizeTime)
-                        _isShowingCards.value = false
-
-                        // Перевертаємо всі картки і запускаємо таймер
-                        _cards.value = _cards.value.map { it.copy(isFlipped = false) }
-
-                        // Запускаємо таймер після того, як картки перевернулись
-                        delay(400) // Затримка для анімації перевороту
-                        gameTimer.start()
-                    } catch (e: Exception) {
-                        // Обробка помилок генерації карток
-                        println("Error initializing game: ${e.message}")
                     }
                 }
+            } catch (e: Exception) {
+                println("Помилка колекції рівнів: ${e.message}")
             }
         }
     }
 
     fun onCardClick(card: Card) {
-        // Перевіряємо можливість перевороту - використовуємо AtomicBoolean для безпечного доступу
-        if (isProcessingMove.get() || card.isMatched || card.isFlipped || _gameFinished.value) {
-            return
+        // Використовуємо глобальне блокування для запобігання швидким подвійним клікам
+        if (!clickLock.compareAndSet(false, true)) {
+            return // Якщо блокування вже встановлено, виходимо
         }
 
-        // Знаходимо індекс картки зі запобіжними перевірками
-        val currentCards = _cards.value.toMutableList()
-        val clickedCardIndex = currentCards.indexOfFirst { it.id == card.id }
+        // Встановлюємо таймер для розблокування кліків
+        viewModelScope.launch {
+            delay(500)
+            clickLock.set(false)
+        }
 
-        if (clickedCardIndex == -1 || clickedCardIndex >= currentCards.size) {
-            return // Картка не знайдена або індекс за межами масиву
+        // Блокуємо доступ для забезпечення атомарності операції
+        synchronized(this) {
+            // Перевіряємо можливість перевороту
+            if (isProcessingMove.get() || card.isMatched || card.isFlipped || _gameFinished.value) {
+                return
+            }
+
+            // Встановлюємо блокування перед будь-якими операціями
+            isProcessingMove.set(true)
         }
 
         try {
+            // Знаходимо індекс картки зі запобіжними перевірками
+            val currentCards = _cards.value.toMutableList()
+            val clickedCardIndex = currentCards.indexOfFirst { it.id == card.id }
+
+            if (clickedCardIndex == -1 || clickedCardIndex >= currentCards.size) {
+                isProcessingMove.set(false)  // Розблоковуємо у випадку помилки
+                return
+            }
+
             // Перевертаємо картку
             val updatedCard = currentCards[clickedCardIndex].copy(isFlipped = true)
             currentCards[clickedCardIndex] = updatedCard
@@ -133,26 +185,38 @@ class GameViewModel(
                     // Перша картка в парі
                     firstCard = updatedCard
                     _cards.value = currentCards
+                    // Розблоковуємо для наступного кліку
+                    isProcessingMove.set(false)
                 }
                 secondCard == null && firstCard?.id != updatedCard.id -> {
-                    // Друга картка в парі - блокуємо подальші дії
+                    // Друга картка в парі
                     secondCard = updatedCard
                     _moves.value = _moves.value + 1
                     _cards.value = currentCards
 
-                    // Блокуємо взаємодію
-                    isProcessingMove.set(true)
-
                     // Перевіряємо співпадіння з затримкою
                     viewModelScope.launch {
-                        delay(500) // Затримка для показу другої картки
-                        checkMatch()
+                        try {
+                            delay(500) // Затримка для показу другої картки
+                            checkMatch()
+                        } catch (e: Exception) {
+                            // Обробка помилок у корутині
+                            println("Помилка в корутині перевірки співпадіння: ${e.message}")
+                            // Забезпечуємо розблокування у випадку помилки
+                            firstCard = null
+                            secondCard = null
+                            isProcessingMove.set(false)
+                        }
                     }
+                }
+                else -> {
+                    // Неочікуваний стан - розблоковуємо
+                    isProcessingMove.set(false)
                 }
             }
         } catch (e: Exception) {
             // Обробка можливих помилок
-            println("Error handling card click: ${e.message}")
+            println("Помилка при обробці кліку по картці: ${e.message}")
             // Скидаємо стан у разі помилки
             isProcessingMove.set(false)
         }
@@ -189,31 +253,50 @@ class GameViewModel(
                 }
             } else {
                 // Картки не співпадають - перевертаємо їх назад
-                // Використовуємо Job для можливості скасувати операцію при рестарті
+                // Належно скасовуємо попередню корутину перед запуском нової
+                flipBackJob?.cancel()
+
                 flipBackJob = viewModelScope.launch {
-                    delay(500) // Затримка перед переворотом
+                    try {
+                        delay(500) // Затримка перед переворотом
 
-                    val updatedCards = currentCards.map {
-                        if (it.id == firstCard?.id || it.id == secondCard?.id) {
-                            it.copy(isFlipped = false)
-                        } else {
-                            it
+                        // Перевіряємо чи корутина все ще активна після затримки
+                        if (!isActive) return@launch
+
+                        val updatedCards = currentCards.map {
+                            if (it.id == firstCard?.id || it.id == secondCard?.id) {
+                                it.copy(isFlipped = false)
+                            } else {
+                                it
+                            }
                         }
+
+                        _cards.value = updatedCards
+
+                        // Скидаємо вибрані картки
+                        firstCard = null
+                        secondCard = null
+
+                        // Розблоковуємо взаємодію з невеликою затримкою
+                        delay(300)
+
+                        // Перевіряємо чи корутина все ще активна
+                        if (isActive) {
+                            isProcessingMove.set(false)
+                        }
+                    } catch (e: Exception) {
+                        // Обробка помилок у корутині
+                        println("Помилка в корутині перевороту карток: ${e.message}")
+                        // Забезпечуємо розблокування у випадку помилки
+                        firstCard = null
+                        secondCard = null
+                        isProcessingMove.set(false)
                     }
-                    _cards.value = updatedCards
-
-                    // Скидаємо вибрані картки
-                    firstCard = null
-                    secondCard = null
-
-                    // Розблоковуємо взаємодію з невеликою затримкою
-                    delay(300)
-                    isProcessingMove.set(false)
                 }
             }
         } catch (e: Exception) {
             // Обробка можливих помилок
-            println("Error checking card match: ${e.message}")
+            println("Помилка при перевірці співпадіння карток: ${e.message}")
             // Скидаємо стан у разі помилки
             firstCard = null
             secondCard = null
@@ -222,7 +305,9 @@ class GameViewModel(
     }
 
     private fun finishGame() {
+        // Зупиняємо таймер і зберігаємо фінальний час
         val finishTime = gameTimer.stop()
+        _elapsedTime.value = finishTime  // Фіксуємо фінальний час
         _gameFinished.value = true
 
         // Обчислюємо кількість зірок на основі часу та кількості ходів
@@ -233,11 +318,32 @@ class GameViewModel(
             // Зберігаємо результат
             viewModelScope.launch {
                 try {
-                    repository.updateLevelScore(levelId, stars, finishTime)
+                    updateLevelScore(levelId, stars, finishTime)
                 } catch (e: Exception) {
                     println("Error updating level score: ${e.message}")
                 }
             }
+        }
+    }
+
+    private suspend fun updateLevelScore(levelId: Int, stars: Int, time: Long) {
+        try {
+            // Отримуємо поточний рівень
+            val currentLevel = repository.getLevel(levelId).first()
+
+            // Обчислюємо, скільки нових зірок було отримано
+            val starsGained = stars - currentLevel.stars
+
+            // Оновлюємо рівень, лише якщо результат кращий
+            repository.updateLevelScore(levelId, stars, time)
+
+            // Додаємо лише нові зірки до загального рахунку, і лише якщо їх кількість позитивна
+            if (starsGained > 0) {
+                // Логуємо для відлагодження
+                println("Додаємо $starsGained нових зірок. Було: ${currentLevel.stars}, Стало: $stars")
+            }
+        } catch (e: Exception) {
+            println("Помилка при оновленні результату рівня: ${e.message}")
         }
     }
 
@@ -246,20 +352,21 @@ class GameViewModel(
         val pairsCount = cardCount / 2
         val optimalMoves = pairsCount * 2 // Оптимальна кількість ходів приблизно дорівнює кількості пар
 
+        // Збільшуємо часові пороги для отримання зірок
         // Оцінка за часом (з урахуванням складності)
         val timeWeight = 0.6 // Ваговий коефіцієнт для часу
-        val timeThreshold = pairsCount * 2000L // Базовий час у мілісекундах
+        val timeThreshold = pairsCount * 3000L // Збільшено базовий час у мілісекундах (було 2000L)
         val timeRating = when {
             time < timeThreshold -> 3
-            time < timeThreshold * 1.5 -> 2
+            time < timeThreshold * 2.0 -> 2 // Збільшено множник з 1.5 до 2.0
             else -> 1
         }
 
-        // Оцінка за ходами
+        // Оцінка за ходами також зроблена більш поблажливою
         val movesWeight = 0.4 // Ваговий коефіцієнт для ходів
         val movesRating = when {
-            moves <= optimalMoves -> 3
-            moves <= optimalMoves * 1.5 -> 2
+            moves <= optimalMoves * 1.5 -> 3 // Збільшено множник з 1.0 до 1.5
+            moves <= optimalMoves * 2.5 -> 2 // Збільшено множник з 1.5 до 2.5
             else -> 1
         }
 
@@ -280,6 +387,7 @@ class GameViewModel(
         firstCard = null
         secondCard = null
         isProcessingMove.set(false)
+        clickLock.set(false)
 
         // Запускаємо нову гру
         initGame()
@@ -288,6 +396,7 @@ class GameViewModel(
     override fun onCleared() {
         super.onCleared()
         // Скасовуємо активні задачі при знищенні ViewModel
+        timerJob?.cancel()
         flipBackJob?.cancel()
         gameTimer.reset()
     }

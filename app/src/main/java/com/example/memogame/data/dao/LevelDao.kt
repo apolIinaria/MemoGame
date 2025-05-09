@@ -26,5 +26,5 @@ interface LevelDao {
     suspend fun updateLevel(level: LevelEntity)
 
     @Query("UPDATE levels SET stars = :stars, bestTime = :time WHERE id = :levelId AND (stars < :stars OR (stars = :stars AND bestTime > :time))")
-    suspend fun updateLevelScore(levelId: Int, stars: Int, time: Long)
+    suspend fun updateLevelScore(levelId: Int, stars: Int, time: Long): Int  // Повертає кількість оновлених рядків
 }
