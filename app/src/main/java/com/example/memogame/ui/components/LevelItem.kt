@@ -18,7 +18,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,7 +85,7 @@ fun LevelItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Прогрес проходження
+                // Прогрес проходження з анімованим прогрес-баром
                 if (level.stars > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -97,18 +96,11 @@ fun LevelItem(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        LinearProgressIndicator(
-                            progress = { level.stars / 3f },
-                            modifier = Modifier
-                                .width(100.dp)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = when (level.stars) {
-                                3 -> Color(0xFFFFD700) // Gold
-                                2 -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.secondary
-                            },
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        // Використовуємо анімований прогрес-бар замість стандартного
+                        AnimatedColorProgressBar(
+                            progress = level.stars / 3f,
+                            modifier = Modifier.width(100.dp),
+                            height = 8.dp
                         )
                     }
                 }

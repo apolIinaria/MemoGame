@@ -52,11 +52,117 @@ object CardGenerator {
                 return createCardPairs(actualPairsCount)
             }
 
-            return createCardPairs(pairsNeeded)
+            // Створюємо пари карток - специфічно для кожного рівня
+            val levelLayout = when (count) {
+                6 -> Pair(2, 3)    // 6 карток: 2 колонки x 3 рядки
+                12 -> Pair(3, 4)   // 12 карток: 3 колонки x 4 рядки
+                16 -> Pair(4, 4)   // 16 карток: 4 колонки x 4 рядки
+                20 -> Pair(4, 5)   // 20 карток: 4 колонки x 5 рядків
+                24 -> Pair(4, 6)   // 24 картки: 4 колонки x 6 рядків
+                else -> null      // Інші розміри не оптимізуємо спеціально
+            }
+
+            // Якщо маємо спеціальний макет для цього рівня, використовуємо його
+            return if (levelLayout != null) {
+                createCardPairsForLayout(pairsNeeded, levelLayout.first, levelLayout.second)
+            } else {
+                createCardPairs(pairsNeeded)
+            }
         } catch (e: Exception) {
             // Обробка будь-яких помилок - повертаємо мінімальний набір
             println("Error generating cards: ${e.message}")
             return createMinimalDeck()
+        }
+    }
+
+    /**
+     * Створює пари карток оптимізовані для конкретного макету (колонки x рядки)
+     */
+    private fun createCardPairsForLayout(pairsCount: Int, columns: Int, rows: Int): List<Card> {
+        try {
+            // Перемішуємо зображення і вибираємо необхідну кількість
+            val shuffledImages = cardImages.shuffled()
+            val selectedImages = shuffledImages.take(pairsCount)
+
+            // Створюємо пари карток з однаковими зображеннями
+            val cards = ArrayList<Card>(pairsCount * 2)
+
+            for (imageRes in selectedImages) {
+                // Додаємо дві картки з однаковим зображенням
+                cards.add(Card(id = generateUniqueId(), imageRes = imageRes, isFlipped = true))
+                cards.add(Card(id = generateUniqueId(), imageRes = imageRes, isFlipped = true))
+            }
+
+            // Перемішуємо картки, але використовуємо спеціальний алгоритм для більш рівномірного розподілу
+            return distributeCardsEvenly(cards, columns, rows)
+        } catch (e: Exception) {
+            // У випадку помилки повертаємо стандартний набір
+            println("Error creating card pairs for layout: ${e.message}")
+            return createCardPairs(pairsCount)
+        }
+    }
+
+    /**
+     * Розподіляє картки по сітці більш рівномірно, щоб пари не були надто близько
+     */
+    private fun distributeCardsEvenly(cards: List<Card>, columns: Int, rows: Int): List<Card> {
+        val totalCells = columns * rows
+        if (cards.size != totalCells) {
+            // Якщо розмір не співпадає, просто повертаємо перемішані картки
+            return cards.shuffled()
+        }
+
+        try {
+            // Створюємо сітку потрібного розміру
+            val grid = Array(rows) { Array<Card?>(columns) { null } }
+            val shuffledPairs = cards.chunked(2).shuffled()
+
+            // Спочатку розміщуємо першу картку з кожної пари
+            var pairIndex = 0
+            for (r in 0 until rows) {
+                for (c in 0 until columns) {
+                    if (pairIndex < shuffledPairs.size && grid[r][c] == null) {
+                        // Розміщуємо першу картку з пари
+                        grid[r][c] = shuffledPairs[pairIndex][0]
+                        pairIndex++
+                        if (pairIndex >= shuffledPairs.size) break
+                    }
+                }
+                if (pairIndex >= shuffledPairs.size) break
+            }
+
+            // Тепер розміщуємо другу картку з кожної пари, намагаючись розмістити їх далеко від першої
+            pairIndex = 0
+            // Перемішуємо порядок обходу сітки для другої картки
+            val rowIndices = (0 until rows).shuffled()
+            val colIndices = (0 until columns).shuffled()
+
+            // Розміщуємо другі картки з кожної пари
+            for (r in rowIndices) {
+                for (c in colIndices) {
+                    if (pairIndex < shuffledPairs.size && grid[r][c] == null) {
+                        // Розміщуємо другу картку з пари
+                        grid[r][c] = shuffledPairs[pairIndex][1]
+                        pairIndex++
+                        if (pairIndex >= shuffledPairs.size) break
+                    }
+                }
+                if (pairIndex >= shuffledPairs.size) break
+            }
+
+            // Перетворюємо сітку назад на плоский список
+            val result = mutableListOf<Card>()
+            for (r in 0 until rows) {
+                for (c in 0 until columns) {
+                    grid[r][c]?.let { result.add(it) }
+                }
+            }
+
+            return result
+        } catch (e: Exception) {
+            // У випадку помилки повертаємо просто перемішані картки
+            println("Error distributing cards: ${e.message}")
+            return cards.shuffled()
         }
     }
 

@@ -1,6 +1,7 @@
 package com.example.memogame.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.memogame.MemoGameApplication
+import com.example.memogame.ui.components.AnimatedColorProgressBar
 import com.example.memogame.ui.components.CardItem
 import com.example.memogame.ui.components.StarRating
 import com.example.memogame.ui.theme.MemoGameTheme
@@ -144,26 +146,24 @@ fun GameScreen(
                             }
 
                             Column(horizontalAlignment = Alignment.End) {
+                                // FIX: Рахуємо кількість знайдених пар, а не окремих карток
                                 val matchedCards = cards.count { it.isMatched }
                                 val totalCards = cards.size
 
                                 Text(
-                                    text = "Знайдено: $matchedCards/$totalCards",
+                                    // Виводимо кількість знайдених пар замість окремих карток
+                                    text = "Знайдено: ${matchedCards / 2}/${totalCards / 2}",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp
                                 )
 
-                                // Прогрес-бар з правильним обчисленням прогресу
+                                // Анімований прогрес-бар з правильним обчисленням прогресу
                                 if (totalCards > 0) {
                                     val progress = matchedCards.toFloat() / totalCards.toFloat()
-                                    LinearProgressIndicator(
-                                        progress = { progress },
-                                        modifier = Modifier
-                                            .width(80.dp)
-                                            .height(6.dp)
-                                            .clip(RoundedCornerShape(3.dp)),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    AnimatedColorProgressBar(
+                                        progress = progress,
+                                        modifier = Modifier.width(80.dp),
+                                        height = 6.dp
                                     )
                                 }
                             }
@@ -171,38 +171,76 @@ fun GameScreen(
                     }
 
                     // Визначаємо кількість колонок і рядків для кожного рівня
+                    // Для рівнів з меншою кількістю карток використовуємо більше простору для кожної картки
                     val (columns, rows) = when (levelId) {
-                        1 -> Pair(3, 2) // 6 карток: 2 рядки x 3 стовпці
-                        2 -> Pair(4, 3) // 12 карток: 3 рядки x 4 стовпці
+                        1 -> Pair(2, 3) // 6 карток: 3 рядки x 2 стовпці
+                        2 -> Pair(3, 4) // 12 карток: 4 рядки x 3 стовпці
                         3 -> Pair(4, 4) // 16 карток: 4 рядки x 4 стовпці
-                        4 -> Pair(5, 4) // 20 карток: 4 рядки x 5 стовпців
-                        5 -> Pair(6, 4) // 24 картки: 4 рядки x 6 стовпців
-                        else -> Pair(3, 2) // За замовчуванням
+                        4 -> Pair(4, 5) // 20 карток: 5 рядків x 4 стовпці
+                        5 -> Pair(4, 6) // 24 картки: 6 рядків x 4 стовпці
+                        else -> Pair(2, 3) // За замовчуванням
                     }
 
                     // Обчислюємо доступний простір з урахуванням інформаційної панелі
-                    val availableHeight = screenHeight - 170.dp // Приблизна висота панелей та інформації
+                    val availableHeight =
+                        screenHeight - 170.dp // Приблизна висота панелей та інформації
                     val availableWidth = screenWidth - 16.dp // З урахуванням відступів
 
-                    // Відступи між картками
-                    val horizontalSpacing = 4.dp
-                    val verticalSpacing = 4.dp
+                    // Адаптивні відступи - більші для менших рівнів
+                    val horizontalSpacing = when (levelId) {
+                        1 -> 16.dp // Більший відступ для 6 карток
+                        2 -> 10.dp // Середній відступ для 12 карток
+                        else -> 8.dp // Стандартний відступ для інших рівнів
+                    }
+
+                    val verticalSpacing = when (levelId) {
+                        1 -> 16.dp // Більший відступ для 6 карток
+                        2 -> 10.dp // Середній відступ для 12 карток
+                        else -> 8.dp // Стандартний відступ для інших рівнів
+                    }
 
                     // Обчислюємо розмір картки, який підходить для даного рівня
                     val cardWidth = (availableWidth - horizontalSpacing * (columns - 1)) / columns
                     val cardHeight = (availableHeight - verticalSpacing * (rows - 1)) / rows
 
-                    // Обираємо менший розмір для створення квадратних карток
-                    val cardSize = if (cardWidth < cardHeight) cardWidth else cardHeight
+                    // Обираємо менший розмір для створення квадратних карток,
+                    // з обмеженням максимального розміру (більше для нижчих рівнів)
+                    val maxCardSize = when (levelId) {
+                        1 -> 160.dp // Більший розмір для 6 карток
+                        2 -> 120.dp // Середній розмір для 12 карток
+                        else -> 100.dp // Стандартний розмір для інших рівнів
+                    }
+
+                    val cardSize = minOf(cardWidth, cardHeight).coerceAtMost(maxCardSize)
 
                     // Сітка карток з адаптивним розміщенням
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(columns),
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
-                        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp), // Додатковий відступ від країв
+                        horizontalArrangement = Arrangement.spacedBy(
+                            horizontalSpacing,
+                            Alignment.CenterHorizontally
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(
+                            verticalSpacing,
+                            Alignment.CenterVertically
+                        ),
                         contentPadding = PaddingValues(
-                            bottom = if (gameFinished) 0.dp else 8.dp
+                            top = 16.dp,
+                            bottom = 16.dp,
+                            start = when (levelId) {
+                                1 -> 24.dp // Більший відступ для рівня початківець
+                                2 -> 16.dp // Середній відступ для рівня легкий
+                                else -> 12.dp // Стандартний відступ для інших рівнів
+                            },
+                            end = when (levelId) {
+                                1 -> 24.dp // Більший відступ для рівня початківець
+                                2 -> 16.dp // Середній відступ для рівня легкий
+                                else -> 12.dp // Стандартний відступ для інших рівнів
+                            },
                         )
                     ) {
                         items(cards) { card ->
@@ -242,7 +280,8 @@ fun GameScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         // Використовуємо звичайне порівняння для розміру карточки результатів
-                        val resultWidth = if (280.dp < screenWidth * 0.8f) 280.dp else screenWidth * 0.8f
+                        val resultWidth =
+                            if (280.dp < screenWidth * 0.8f) 280.dp else screenWidth * 0.8f
 
                         Card(
                             modifier = Modifier
@@ -288,6 +327,7 @@ fun GameScreen(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
+                                // FIX: Додаємо відображення кількості ходів у результатах
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween

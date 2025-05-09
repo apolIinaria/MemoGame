@@ -180,6 +180,9 @@ class GameViewModel(
             val updatedCard = currentCards[clickedCardIndex].copy(isFlipped = true)
             currentCards[clickedCardIndex] = updatedCard
 
+            // FIX: Інкрементуємо лічильник ходів для КОЖНОЇ перевернутої картки
+            _moves.value = _moves.value + 1
+
             when {
                 firstCard == null -> {
                     // Перша картка в парі
@@ -189,9 +192,8 @@ class GameViewModel(
                     isProcessingMove.set(false)
                 }
                 secondCard == null && firstCard?.id != updatedCard.id -> {
-                    // Друга картка в парі
+                    // Друга картка в парі - ВЖЕ інкрементували хід вище
                     secondCard = updatedCard
-                    _moves.value = _moves.value + 1
                     _cards.value = currentCards
 
                     // Перевіряємо співпадіння з затримкою
@@ -305,7 +307,7 @@ class GameViewModel(
     }
 
     private fun finishGame() {
-        // Зупиняємо таймер і зберігаємо фінальний час
+        // FIX: Зупиняємо таймер, зберігаємо і фіксуємо фінальний час
         val finishTime = gameTimer.stop()
         _elapsedTime.value = finishTime  // Фіксуємо фінальний час
         _gameFinished.value = true
@@ -350,25 +352,35 @@ class GameViewModel(
     private fun calculateStars(time: Long, moves: Int, cardCount: Int): Int {
         // Базовий час і ходи для різних рівнів складності
         val pairsCount = cardCount / 2
-        val optimalMoves = pairsCount * 2 // Оптимальна кількість ходів приблизно дорівнює кількості пар
+
+        // FIX: Оновлена логіка для оптимальної кількості ходів
+        // Кожна картка - це один хід, але для ідеальної гри потрібно:
+        // - pairsCount * 2 ходів (всі пари знайдені з першого разу)
+        val perfectMoves = cardCount // Ідеальна гра - всі картки перевернуті по одному разу
+        val goodMoves = perfectMoves * 1.5f // Хороша гра
+        val okMoves = perfectMoves * 2.5f // Нормальна гра
 
         // Збільшуємо часові пороги для отримання зірок
         // Оцінка за часом (з урахуванням складності)
         val timeWeight = 0.6 // Ваговий коефіцієнт для часу
-        val timeThreshold = pairsCount * 3000L // Збільшено базовий час у мілісекундах (було 2000L)
+        val timeThreshold = pairsCount * 3000L // Базовий час у мілісекундах
         val timeRating = when {
-            time < timeThreshold -> 3
-            time < timeThreshold * 2.0 -> 2 // Збільшено множник з 1.5 до 2.0
-            else -> 1
+            time < timeThreshold -> 3          // Відмінний час
+            time < timeThreshold * 2.0 -> 2    // Хороший час
+            else -> 1                         // Нормальний час
         }
 
-        // Оцінка за ходами також зроблена більш поблажливою
+        // Оцінка за ходами з урахуванням нової системи підрахунку ходів
         val movesWeight = 0.4 // Ваговий коефіцієнт для ходів
         val movesRating = when {
-            moves <= optimalMoves * 1.5 -> 3 // Збільшено множник з 1.0 до 1.5
-            moves <= optimalMoves * 2.5 -> 2 // Збільшено множник з 1.5 до 2.5
-            else -> 1
+            moves <= perfectMoves -> 3        // Ідеальна гра - максимальна оцінка
+            moves <= goodMoves -> 2           // Хороша гра
+            else -> 1                        // Нормальна гра
         }
+
+        // Виводимо інформацію для налагодження
+        println("Оцінка гри: Час=$time (поріг=$timeThreshold, рейтинг=$timeRating), " +
+                "Ходи=$moves (ідеальні=$perfectMoves, рейтинг=$movesRating)")
 
         // Зважена оцінка (округлена до цілого)
         return (timeRating * timeWeight + movesRating * movesWeight).toInt().coerceIn(1, 3)

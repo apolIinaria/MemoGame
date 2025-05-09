@@ -49,12 +49,12 @@ fun CardItem(
     val configuration = LocalConfiguration.current
     val isSmallScreen = configuration.screenWidthDp < 400
 
-    // Зменшуємо відступи та розміри для малих екранів
-    val innerPadding = if (isSmallScreen) 6.dp else 12.dp
+    // Оптимізовані відступи залежно від екрану
+    val innerPadding = if (isSmallScreen) 4.dp else 8.dp
     val elevation = if (card.isMatched) 1.dp else if (isSmallScreen) 2.dp else 4.dp
 
     // Оптимізуємо пропорції карток
-    val aspectRatio = if (isSmallScreen) 0.80f else 0.75f
+    val aspectRatio = 0.9f  // Квадратні картки з невеликим запасом
 
     // Механізм блокування кліків з безпечним збереженням стану
     val clickable = rememberSaveable { mutableStateOf(true) }
@@ -83,7 +83,7 @@ fun CardItem(
     val rotation by animateFloatAsState(
         targetValue = if (card.isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 250, // Менша тривалість для зниження навантаження
+            durationMillis = 300, // Більш плавна анімація
             easing = FastOutSlowInEasing
         ),
         label = "card_rotation"
@@ -92,13 +92,22 @@ fun CardItem(
     // Затемнення картки, якщо вона вже знайдена (matched)
     val alpha = if (card.isMatched) 0.7f else 1.0f
 
+    // Додаємо невелике масштабування для ефекту наведення (simulating hovering effect)
+    val scale by animateFloatAsState(
+        targetValue = if (card.isFlipped && !card.isMatched) 1.05f else 1.0f,
+        animationSpec = tween(150),
+        label = "card_scale"
+    )
+
     // Базовий модифікатор для картки
     val cardModifier = modifier
         .aspectRatio(aspectRatio)
-        .shadow(elevation)
+        .shadow(elevation, shape = CardDefaults.shape)
         .zIndex(if (card.isFlipped) 1f else 0f)
         .graphicsLayer {
             rotationY = rotation
+            scaleX = scale
+            scaleY = scale
             cameraDistance = 12f * density // Збільшено для плавнішої анімації
             this.alpha = alpha
         }

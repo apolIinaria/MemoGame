@@ -107,7 +107,7 @@ fun MainScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "МГ",
+                    text = "S&P",
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -117,7 +117,7 @@ fun MainScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Мемо Гра",
+                text = "Гра Мемо",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -240,12 +240,12 @@ fun MainScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Info,
-                    contentDescription = "Про гру"
+                    contentDescription = "Про додаток"
                 )
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                Text("Про гру")
+                Text("Про додаток")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -295,7 +295,7 @@ fun MainScreen(
                 text = {
                     Column {
                         Text(
-                            text = "Мемо Гра - це захоплююча гра на тренування пам'яті.",
+                            text = "Гра Мемо - це захоплююча гра на тренування пам'яті.",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -305,7 +305,7 @@ fun MainScreen(
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Text(
-                            text = "Розробник: Ваше ім'я",
+                            text = "Розробники: Новомлинець Поліна та Болобан Софія ",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )

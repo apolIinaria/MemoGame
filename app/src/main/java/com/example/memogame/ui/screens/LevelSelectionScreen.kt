@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.memogame.MemoGameApplication
+import com.example.memogame.ui.components.AnimatedColorProgressBar
 import com.example.memogame.ui.components.LevelItem
 import com.example.memogame.viewmodel.LevelSelectionViewModel
 
@@ -44,6 +45,11 @@ fun LevelSelectionScreen(
 
     val levels by viewModel.levels.collectAsState()
     val user by viewModel.user.collectAsState()
+
+    // Обчислюємо загальний прогрес проходження гри (відсоток зірок від максимально можливих)
+    val maxPossibleStars = levels.size * 3 // 3 зірки на кожен рівень
+    val currentTotalStars = user.totalStars
+    val gameProgress = if (maxPossibleStars > 0) currentTotalStars.toFloat() / maxPossibleStars else 0f
 
     Scaffold(
         topBar = {
@@ -78,15 +84,15 @@ fun LevelSelectionScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Інформація про загальну кількість зірок
-                Box(
+                // Інформація про загальну кількість зірок і прогрес гри
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 12.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "Зібрано зірок: ${user.totalStars}",
+                        text = "Зібрано зірок: $currentTotalStars з $maxPossibleStars",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
