@@ -15,68 +15,68 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 
-val PinkPrimary = Color(0xFFFF4081)
-val PinkDark = Color(0xFFC60055)
-val PinkLight = Color(0xFFFF79B0)
+val PinkPrimary = Color(0xFFF8BBD0)
+val PinkDark = Color(0xFFF48FB1)
+val PinkLight = Color(0xFFFCE4EC)
 
-val CardBorderPink = Color(0xFFFF598E)
+val CardBorderPink = Color(0xFFF06292)
 
 private val PinkLightColorScheme = lightColorScheme(
     primary = PinkPrimary,
-    onPrimary = Color.White,
+    onPrimary = Color(0xFF442C2E),
     primaryContainer = PinkLight,
-    onPrimaryContainer = Color(0xFF3F0021),
+    onPrimaryContainer = Color(0xFF442C2E),
 
-    secondary = Color(0xFF9C27B0),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE8D5F0),
-    onSecondaryContainer = Color(0xFF3E0046),
+    secondary = Color(0xFFCE93D8),
+    onSecondary = Color(0xFF442C2E),
+    secondaryContainer = Color(0xFFF3E5F5),
+    onSecondaryContainer = Color(0xFF442C2E),
 
-    tertiary = Color(0xFFFF9800),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFFFE0B2),
-    onTertiaryContainer = Color(0xFF522700),
+    tertiary = Color(0xFFFFCC80),
+    onTertiary = Color(0xFF442C2E),
+    tertiaryContainer = Color(0xFFFFF3E0),
+    onTertiaryContainer = Color(0xFF442C2E),
 
-    background = Color(0xFFFEF0F3),
-    onBackground = Color(0xFF1A1A1A),
+    background = Color(0xFFFEF6F7),
+    onBackground = Color(0xFF442C2E),
 
     surface = Color.White,
-    onSurface = Color(0xFF1A1A1A),
+    onSurface = Color(0xFF442C2E),
 
-    surfaceVariant = Color(0xFFFFE2EA),
-    onSurfaceVariant = Color(0xFF4A4A4A),
+    surfaceVariant = Color(0xFFFFF0F5),
+    onSurfaceVariant = Color(0xFF7B6F72),
 
-    error = Color(0xFFE53935),
-    onError = Color.White
+    error = Color(0xFFEF9A9A),
+    onError = Color(0xFF442C2E)
 )
 
 private val PinkDarkColorScheme = darkColorScheme(
     primary = PinkLight,
-    onPrimary = Color(0xFF3F0021),
+    onPrimary = Color(0xFF442C2E),
     primaryContainer = PinkPrimary,
-    onPrimaryContainer = Color(0xFFFFD9E3),
+    onPrimaryContainer = Color(0xFFFFEDF3),
 
-    secondary = Color(0xFFCE93D8),
-    onSecondary = Color(0xFF3E0046),
-    secondaryContainer = Color(0xFF6C1B85),
-    onSecondaryContainer = Color(0xFFEED6F6),
+    secondary = Color(0xFFE1BEE7),
+    onSecondary = Color(0xFF442C2E),
+    secondaryContainer = Color(0xFF7B4882),
+    onSecondaryContainer = Color(0xFFF3E5F5),
 
-    tertiary = Color(0xFFFFB74D),
-    onTertiary = Color(0xFF522700),
-    tertiaryContainer = Color(0xFFB36A00),
-    onTertiaryContainer = Color(0xFFFFE0B2),
+    tertiary = Color(0xFFFFE0B2),
+    onTertiary = Color(0xFF442C2E),
+    tertiaryContainer = Color(0xFFE0884E),
+    onTertiaryContainer = Color(0xFFFFF3E0),
 
-    background = Color(0xFF2C1A21),
+    background = Color(0xFF362C30),
     onBackground = Color(0xFFF5F5F5),
 
-    surface = Color(0xFF3A2530),
+    surface = Color(0xFF443238),
     onSurface = Color(0xFFF5F5F5),
 
-    surfaceVariant = Color(0xFF442631),
-    onSurfaceVariant = Color(0xFFD9D9D9),
+    surfaceVariant = Color(0xFF514145),
+    onSurfaceVariant = Color(0xFFE5E0E1),
 
-    error = Color(0xFFEF5350),
-    onError = Color.White
+    error = Color(0xFFFFABAB),
+    onError = Color(0xFF442C2E)
 )
 
 @Composable

@@ -62,5 +62,23 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        val audioManager = (application as MemoGameApplication).audioManager
+        audioManager.startBackgroundMusic()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        (application as MemoGameApplication).audioManager.resumeBackgroundMusic()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        (application as MemoGameApplication).audioManager.pauseBackgroundMusic()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        (application as MemoGameApplication).audioManager.stopBackgroundMusic()
     }
 }

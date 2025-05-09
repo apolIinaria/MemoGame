@@ -40,6 +40,7 @@ fun GameScreen(
     val viewModel: GameViewModel = viewModel(
         factory = GameViewModel.Factory(
             repository = application.repository,
+            audioManager = application.audioManager,
             savedStateHandle = SavedStateHandle(mapOf("levelId" to levelId))
         )
     )
@@ -51,6 +52,7 @@ fun GameScreen(
     val elapsedTime by viewModel.elapsedTime.collectAsState()
     val level by viewModel.level.collectAsState()
     val moves by viewModel.moves.collectAsState()
+    val finalMoves by viewModel.finalMoves.collectAsState()
 
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -310,7 +312,7 @@ fun GameScreen(
                                 ) {
                                     Text("Ходи:")
                                     Text(
-                                        text = "$moves",
+                                        text = "${maxOf(finalMoves)}",
                                         fontWeight = FontWeight.Bold
                                     )
                                 }

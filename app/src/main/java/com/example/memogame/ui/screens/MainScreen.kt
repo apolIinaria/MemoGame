@@ -15,11 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -34,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,6 +54,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -67,12 +75,16 @@ fun MainScreen(
         factory = MainViewModel.Factory(application.repository)
     )
 
+    var isMusicEnabled by remember { mutableStateOf(application.audioManager.isMusicEnabled()) }
+
     val user by viewModel.user.collectAsState()
     val totalLevels by viewModel.totalLevels.collectAsState()
     val completedLevels by viewModel.completedLevels.collectAsState()
 
     var showAboutDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var showNameEditorDialog by remember { mutableStateOf(false) }
+    var newUserName by remember { mutableStateOf("") }
 
     val context = LocalContext.current
 
@@ -152,12 +164,31 @@ fun MainScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Вітаємо, ${user.name}!",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Вітаємо, ${user.name}!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        IconButton(
+                            onClick = {
+                                newUserName = user.name
+                                showNameEditorDialog = true
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Змінити ім'я",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -257,6 +288,31 @@ fun MainScreen(
 
                 Text(
                     "Про гру",
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ElevatedButton(
+                onClick = {
+                    isMusicEnabled = !isMusicEnabled
+                    application.audioManager.setMusicEnabled(isMusicEnabled)
+                },
+                colors = ButtonDefaults.elevatedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Icon(
+                    imageVector = if (isMusicEnabled) Icons.Default.MusicNote else Icons.Default.MusicOff,
+                    contentDescription = if (isMusicEnabled) "Вимкнути музику" else "Увімкнути музику",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text(
+                    text = if (isMusicEnabled) "Вимкнути музику" else "Увімкнути музику",
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -411,6 +467,62 @@ fun MainScreen(
                         onClick = { showResetDialog = false },
                         enabled = !isResetting
                     ) {
+                        Text("Скасувати")
+                    }
+                }
+            )
+        }
+
+        if (showNameEditorDialog) {
+            AlertDialog(
+                onDismissRequest = { showNameEditorDialog = false },
+                title = { Text("Змінити ім'я") },
+                text = {
+                    Column {
+                        Text(
+                            "Введіть нове ім'я:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = newUserName,
+                            onValueChange = { newUserName = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("Ім'я") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (newUserName.isNotBlank()) {
+                                        viewModel.updateUserName(newUserName)
+                                        showNameEditorDialog = false
+                                    }
+                                }
+                            )
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (newUserName.isNotBlank()) {
+                                viewModel.updateUserName(newUserName)
+                                showNameEditorDialog = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Зберегти")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showNameEditorDialog = false }) {
                         Text("Скасувати")
                     }
                 }

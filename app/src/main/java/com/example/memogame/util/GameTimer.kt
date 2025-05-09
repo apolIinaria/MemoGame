@@ -15,6 +15,7 @@ class GameTimer(private val scope: CoroutineScope) {
     val elapsedTime: StateFlow<Long> = _elapsedTime
 
     private val isRunning = AtomicBoolean(false)
+    private val isReset = AtomicBoolean(true)
 
     private var startTime: Long = 0
 
@@ -23,11 +24,12 @@ class GameTimer(private val scope: CoroutineScope) {
             stop()
         }
 
+        isReset.set(false)
         startTime = System.currentTimeMillis()
 
         job = scope.launch {
             try {
-                while (isActive && isRunning.get()) {
+                while (isActive && isRunning.get() && !isReset.get()) {
                     _elapsedTime.value = System.currentTimeMillis() - startTime
                     delay(100)
                 }
@@ -47,13 +49,14 @@ class GameTimer(private val scope: CoroutineScope) {
 
     fun reset() {
         isRunning.set(false)
+        isReset.set(true)
         job?.cancel()
         job = null
         _elapsedTime.value = 0L
     }
 
     fun isActive(): Boolean {
-        return isRunning.get() && job?.isActive == true
+        return isRunning.get() && job?.isActive == true && !isReset.get()
     }
 
     fun pause() {
@@ -63,13 +66,13 @@ class GameTimer(private val scope: CoroutineScope) {
     }
 
     fun resume() {
-        if (!isRunning.getAndSet(true)) {
+        if (!isRunning.getAndSet(true) && !isReset.get()) {
             val currentTime = _elapsedTime.value
             startTime = System.currentTimeMillis() - currentTime
 
             job = scope.launch {
                 try {
-                    while (isActive && isRunning.get()) {
+                    while (isActive && isRunning.get() && !isReset.get()) {
                         _elapsedTime.value = System.currentTimeMillis() - startTime
                         delay(100)
                     }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.widget.Toast
 import com.example.memogame.data.database.AppDatabase
 import com.example.memogame.data.repository.GameRepository
+import com.example.memogame.util.AudioManager
 import com.example.memogame.util.CardGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,8 @@ class MemoGameApplication : Application() {
             throw e
         }
     }
+
+    val audioManager by lazy { AudioManager.getInstance(this) }
 
     override fun onCreate() {
         super.onCreate()

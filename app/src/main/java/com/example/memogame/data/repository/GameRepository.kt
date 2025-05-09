@@ -47,4 +47,8 @@ class GameRepository(
             userDao.addStars(newStars)
         }
     }
+
+    suspend fun updateUser(user: UserEntity) {
+        userDao.updateUser(user)
+    }
 }

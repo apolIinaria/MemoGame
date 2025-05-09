@@ -9,20 +9,20 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Рожева тема -->
-    <color name="pink_primary">#FFFF4081</color>
-    <color name="pink_dark">#FFC60055</color>
-    <color name="pink_light">#FFFF79B0</color>
+    <!-- Пастельна рожева тема -->
+    <color name="pink_primary">#FFF8BBD0</color>
+    <color name="pink_dark">#FFF48FB1</color>
+    <color name="pink_light">#FFFCE4EC</color>
 
     <!-- Кольори карток -->
-    <color name="card_back_pink">#FFFFB4CC</color>
-    <color name="card_border_pink">#FFFF598E</color>
+    <color name="card_back_pink">#FFFFD1DC</color>
+    <color name="card_border_pink">#FFF06292</color>
 
     <!-- Фонові кольори -->
-    <color name="pink_background">#FFFEF0F3</color>
-    <color name="pink_surface">#FFFFE2EA</color>
+    <color name="pink_background">#FFFEF6F7</color>
+    <color name="pink_surface">#FFFFF0F5</color>
 
     <!-- Темна тема кольори -->
-    <color name="pink_dark_background">#FF2C1A21</color>
-    <color name="pink_dark_surface">#FF3A2530</color>
+    <color name="pink_dark_background">#FF362C30</color>
+    <color name="pink_dark_surface">#FF443238</color>
 </resources>

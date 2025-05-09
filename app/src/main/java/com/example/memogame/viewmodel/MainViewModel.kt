@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class MainViewModel(private val repository: GameRepository) : ViewModel() {
     val user: StateFlow<UserEntity> = repository.user.stateIn(
@@ -32,6 +34,22 @@ class MainViewModel(private val repository: GameRepository) : ViewModel() {
         SharingStarted.WhileSubscribed(5000),
         0
     )
+
+    fun updateUserName(newName: String) {
+        viewModelScope.launch {
+            try {
+                val currentUser = repository.user.first()
+
+                val updatedUser = currentUser.copy(name = newName)
+
+                repository.updateUser(updatedUser)
+
+                println("Ім'я користувача успішно оновлено на: $newName")
+            } catch (e: Exception) {
+                println("Помилка при оновленні імені користувача: ${e.message}")
+            }
+        }
+    }
 
     class Factory(private val repository: GameRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")

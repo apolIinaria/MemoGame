@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.memogame.model.Card
 import com.example.memogame.model.Level
 import com.example.memogame.data.repository.GameRepository
+import com.example.memogame.util.AudioManager
 import com.example.memogame.util.CardGenerator
 import com.example.memogame.util.GameTimer
 import kotlinx.coroutines.Job
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class GameViewModel(
     private val repository: GameRepository,
+    private val audioManager: AudioManager,
     internal val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val levelId: Int = savedStateHandle.get<Int>("levelId") ?: 1
@@ -46,11 +48,17 @@ class GameViewModel(
     private val _gameFinished = MutableStateFlow(false)
     val gameFinished = _gameFinished.asStateFlow()
 
+    private val _gameCompleted = MutableStateFlow(false)
+    val gameCompleted = _gameCompleted.asStateFlow()
+
     private val _stars = MutableStateFlow(0)
     val stars = _stars.asStateFlow()
 
     private val _moves = MutableStateFlow(0)
     val moves = _moves.asStateFlow()
+
+    private val _finalMoves = MutableStateFlow(0)
+    val finalMoves = _finalMoves.asStateFlow()
 
     private var firstCard: Card? = null
     private var secondCard: Card? = null
@@ -72,7 +80,9 @@ class GameViewModel(
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             gameTimer.elapsedTime.collect { time ->
-                _elapsedTime.value = time
+                if (!_gameCompleted.value) {
+                    _elapsedTime.value = time
+                }
             }
         }
     }
@@ -84,6 +94,7 @@ class GameViewModel(
         secondCard = null
         isProcessingMove.set(false)
         clickLock.set(false)
+        _gameCompleted.value = false
 
         viewModelScope.launch {
             try {
@@ -92,6 +103,7 @@ class GameViewModel(
                         try {
                             _cards.value = CardGenerator.generateCards(level.cardCount)
                             _moves.value = 0
+                            _finalMoves.value = 0
 
                             _isShowingCards.value = true
 
@@ -126,13 +138,19 @@ class GameViewModel(
     }
 
     fun onCardClick(card: Card) {
+        if (_gameCompleted.value) return
+
         if (!clickLock.compareAndSet(false, true)) {
             return
         }
 
+        audioManager.playCardFlipSound()
+
         viewModelScope.launch {
             delay(500)
-            clickLock.set(false)
+            if (!_gameCompleted.value) {
+                clickLock.set(false)
+            }
         }
 
         synchronized(this) {
@@ -172,7 +190,9 @@ class GameViewModel(
                     viewModelScope.launch {
                         try {
                             delay(500)
-                            checkMatch()
+                            if (!_gameCompleted.value) {
+                                checkMatch()
+                            }
                         } catch (e: Exception) {
                             println("Помилка в корутині перевірки співпадіння: ${e.message}")
                             firstCard = null
@@ -194,10 +214,14 @@ class GameViewModel(
     }
 
     private fun checkMatch() {
+        if (_gameCompleted.value) return
+
         try {
             val currentCards = _cards.value.toMutableList()
 
             if (firstCard?.imageRes == secondCard?.imageRes) {
+                audioManager.playMatchSound()
+
                 val updatedCards = currentCards.map {
                     if (it.id == firstCard?.id || it.id == secondCard?.id) {
                         it.copy(isMatched = true)
@@ -208,6 +232,9 @@ class GameViewModel(
                 _cards.value = updatedCards
 
                 if (updatedCards.all { it.isMatched }) {
+                    println("Всі картки знайдено: ходи = ${_moves.value}")
+                    // Відтворюємо звук перемоги
+                    audioManager.playWinSound()
                     finishGame()
                 } else {
                     firstCard = null
@@ -215,7 +242,9 @@ class GameViewModel(
 
                     viewModelScope.launch {
                         delay(300)
-                        isProcessingMove.set(false)
+                        if (!_gameCompleted.value) {
+                            isProcessingMove.set(false)
+                        }
                     }
                 }
             } else {
@@ -225,7 +254,7 @@ class GameViewModel(
                     try {
                         delay(500)
 
-                        if (!isActive) return@launch
+                        if (!isActive || _gameCompleted.value) return@launch
 
                         val updatedCards = currentCards.map {
                             if (it.id == firstCard?.id || it.id == secondCard?.id) {
@@ -242,14 +271,16 @@ class GameViewModel(
 
                         delay(300)
 
-                        if (isActive) {
+                        if (isActive && !_gameCompleted.value) {
                             isProcessingMove.set(false)
                         }
                     } catch (e: Exception) {
                         println("Помилка в корутині перевороту карток: ${e.message}")
                         firstCard = null
                         secondCard = null
-                        isProcessingMove.set(false)
+                        if (!_gameCompleted.value) {
+                            isProcessingMove.set(false)
+                        }
                     }
                 }
             }
@@ -258,17 +289,48 @@ class GameViewModel(
 
             firstCard = null
             secondCard = null
-            isProcessingMove.set(false)
+            if (!_gameCompleted.value) {
+                isProcessingMove.set(false)
+            }
         }
     }
 
     private fun finishGame() {
+        if (_gameCompleted.value) return
+
+        val currentMoves = _moves.value
+
+        _finalMoves.value = maxOf(currentMoves, 1)
+
+        _gameCompleted.value = true
+
         val finishTime = gameTimer.stop()
         _elapsedTime.value = finishTime
+
         _gameFinished.value = true
 
+        isProcessingMove.set(true)
+        clickLock.set(true)
+
+        flipBackJob?.cancel()
+        timerJob?.cancel()
+
+        viewModelScope.launch {
+            try {
+                delay(100)
+                gameTimer.reset()
+
+                if (_finalMoves.value <= 0) {
+                    println("КОРЕКЦІЯ: finalMoves після затримки = ${_finalMoves.value}, встановлюємо = $currentMoves")
+                    _finalMoves.value = maxOf(currentMoves, 1)
+                }
+            } catch (e: Exception) {
+                println("Error resetting timer: ${e.message}")
+            }
+        }
+
         level.value?.let { level ->
-            val stars = calculateStars(finishTime, _moves.value, level.cardCount)
+            val stars = calculateStars(finishTime, maxOf(currentMoves, 1), level.cardCount)
             _stars.value = stars
 
             viewModelScope.launch {
@@ -329,10 +391,13 @@ class GameViewModel(
     fun restartGame() {
         gameTimer.reset()
         _gameFinished.value = false
+        _gameCompleted.value = false
         _stars.value = 0
         _moves.value = 0
+        _finalMoves.value = 0
 
         flipBackJob?.cancel()
+        timerJob?.cancel()
 
         firstCard = null
         secondCard = null
@@ -340,6 +405,7 @@ class GameViewModel(
         clickLock.set(false)
 
         initGame()
+        startTimerTracking()
     }
 
     override fun onCleared() {
@@ -351,6 +417,7 @@ class GameViewModel(
 
     class Factory(
         private val repository: GameRepository,
+        private val audioManager: AudioManager,
         private val savedStateHandle: SavedStateHandle
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -358,6 +425,7 @@ class GameViewModel(
             if (modelClass.isAssignableFrom(GameViewModel::class.java)) {
                 return GameViewModel(
                     repository = repository,
+                    audioManager = audioManager,
                     savedStateHandle = savedStateHandle
                 ) as T
             }
