@@ -18,17 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Анімований прогрес-бар із плавною зміною значення
- *
- * @param progress Поточний прогрес від 0.0f до 1.0f
- * @param modifier Модифікатор для прогрес-бару
- * @param height Висота прогрес-бару
- * @param backgroundColor Колір фону прогрес-бару
- * @param progressColor Колір заповнення прогрес-бару
- * @param cornerRadius Радіус закруглення кутів
- * @param animationSpec Специфікація анімації для зміни прогресу
- */
 @Composable
 fun AnimatedProgressBar(
     progress: Float,
@@ -42,14 +31,11 @@ fun AnimatedProgressBar(
         easing = FastOutSlowInEasing
     )
 ) {
-    // Анімація значення прогресу
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = animationSpec,
         label = "progress_animation"
     )
-
-    // Контейнер з фоном
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -57,7 +43,6 @@ fun AnimatedProgressBar(
             .clip(RoundedCornerShape(cornerRadius))
             .background(backgroundColor)
     ) {
-        // Індикатор прогресу
         Box(
             modifier = Modifier
                 .fillMaxWidth(animatedProgress)
@@ -67,14 +52,6 @@ fun AnimatedProgressBar(
     }
 }
 
-/**
- * Анімований прогрес-бар, який змінює колір залежно від прогресу
- *
- * @param progress Поточний прогрес від 0.0f до 1.0f
- * @param modifier Модифікатор для прогрес-бару
- * @param height Висота прогрес-бару
- * @param backgroundColor Колір фону прогрес-бару
- */
 @Composable
 fun AnimatedColorProgressBar(
     progress: Float,
@@ -82,14 +59,12 @@ fun AnimatedColorProgressBar(
     height: Dp = 6.dp,
     backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant
 ) {
-    // Визначаємо колір заповнення залежно від прогресу
     val progressColor = when {
-        progress >= 0.9f -> Color(0xFFFFD700) // Золотий для майже завершених
-        progress >= 0.5f -> MaterialTheme.colorScheme.primary // Основний колір для середнього прогресу
-        else -> MaterialTheme.colorScheme.secondary // Другорядний колір для початку
+        progress >= 0.9f -> Color(0xFFFFD700)
+        progress >= 0.5f -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.secondary
     }
 
-    // Використовуємо базовий анімований прогрес-бар
     AnimatedProgressBar(
         progress = progress,
         modifier = modifier,

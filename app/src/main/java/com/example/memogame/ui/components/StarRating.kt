@@ -29,26 +29,24 @@ fun StarRating(
         for (i in 1..maxStars) {
             val isStarFilled = i <= stars
 
-            // Анімований масштаб для зірок
             val scale by animateFloatAsState(
                 targetValue = if (isStarFilled && animated) 1.2f else 1f,
                 animationSpec = tween(
                     durationMillis = 300,
                     easing = FastOutSlowInEasing,
-                    delayMillis = i * 100 // Поступова анімація кожної зірки
+                    delayMillis = i * 100
                 ),
                 label = "star_animation"
             )
 
             val starColor = when {
-                isStarFilled -> Color(0xFFFFD700) // Золотий колір для заповнених зірок
+                isStarFilled -> Color(0xFFFFD700)
                 else -> Color.LightGray
             }
 
-            // Використовуємо правильні іконки
             val starIcon = when {
                 isStarFilled -> Icons.Filled.Star
-                else -> Icons.Outlined.Star  // Правильна іконка з бібліотеки Icons.Outlined
+                else -> Icons.Outlined.Star
             }
 
             Icon(

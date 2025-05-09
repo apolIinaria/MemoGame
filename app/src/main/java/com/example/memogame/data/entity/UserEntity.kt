@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "users")
 data class UserEntity(
     @PrimaryKey(autoGenerate = false)
-    val id: Int = 1, // Оскільки гра для одного користувача, використовуємо фіксований ID
+    val id: Int = 1,
     val name: String = "Player",
     val totalStars: Int = 0
 )

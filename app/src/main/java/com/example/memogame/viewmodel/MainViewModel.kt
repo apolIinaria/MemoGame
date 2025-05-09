@@ -17,7 +17,6 @@ class MainViewModel(private val repository: GameRepository) : ViewModel() {
         UserEntity()
     )
 
-    // Додаємо інформацію про пройдені рівні
     val totalLevels: StateFlow<Int> = repository.levels.map { levels ->
         levels.size
     }.stateIn(

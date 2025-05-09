@@ -12,26 +12,20 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class MemoGameApplication : Application() {
-    // Використовуємо SupervisorJob для кращої обробки помилок
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Лінива ініціалізація бази даних
     val database by lazy {
         try {
             AppDatabase.getDatabase(this, applicationScope)
         } catch (e: Exception) {
-            // Логування помилки та показ повідомлення
             showErrorToast("Помилка ініціалізації бази даних")
             throw e
         }
     }
-
-    // Лінива ініціалізація репозиторію
     val repository by lazy {
         try {
             GameRepository(database.userDao(), database.levelDao())
         } catch (e: Exception) {
-            // Логування помилки та показ повідомлення
             showErrorToast("Помилка ініціалізації репозиторію")
             throw e
         }
@@ -40,10 +34,8 @@ class MemoGameApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Скидаємо генератор ID при запуску програми
         CardGenerator.resetIdGenerator()
 
-        // Попередня ініціалізація бази даних у фоні
         applicationScope.launch {
             try {
                 preloadDatabase()
@@ -53,56 +45,37 @@ class MemoGameApplication : Application() {
         }
     }
 
-    /**
-     * Попередньо завантажує базу даних для швидшого доступу в майбутньому
-     */
     private suspend fun preloadDatabase() {
-        // Доступ до бази даних для ініціалізації
         database.openHelper.writableDatabase
     }
 
-    /**
-     * Показує повідомлення про помилку користувачу
-     */
     private fun showErrorToast(message: String) {
         try {
             Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            // Ігноруємо помилки при показі повідомлення
             println("Error showing toast: ${e.message}")
         }
     }
 
-    /**
-     * Отримує репозиторій з контексту
-     */
     companion object {
         fun getRepository(context: Context): GameRepository {
             return (context.applicationContext as MemoGameApplication).repository
         }
     }
 
-    /**
-     * Скидає базу даних повністю - видаляє її і створює нову
-     */
     fun resetDatabase(onComplete: () -> Unit) {
         applicationScope.launch(Dispatchers.IO) {
             try {
-                // Закриваємо поточне з'єднання, якщо воно відкрите
                 if (database.isOpen) {
                     database.close()
                 }
 
-                // Видаляємо базу даних
                 applicationContext.deleteDatabase("memo_game_database")
 
-                // Очищаємо посилання на базу для перестворення
                 AppDatabase.clearInstance()
 
-                // Переініціалізуємо базу даних (це запустить onCreate callback)
                 val newDb = AppDatabase.getDatabase(applicationContext, applicationScope)
 
-                // Виконуємо callback для повідомлення про завершення
                 launch(Dispatchers.Main) {
                     onComplete()
                 }
@@ -110,7 +83,6 @@ class MemoGameApplication : Application() {
                 println("Error resetting database: ${e.message}")
                 e.printStackTrace()
 
-                // Виконуємо callback навіть при помилці, щоб UI не залишався заблокованим
                 launch(Dispatchers.Main) {
                     onComplete()
                     showErrorToast("Помилка при скиданні бази даних")

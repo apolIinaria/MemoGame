@@ -15,49 +15,74 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 
-// Світла кольорова схема - більш свіжа та грайлива
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF1E88E5),        // Яскравий синій
+val PinkPrimary = Color(0xFFFF4081)
+val PinkDark = Color(0xFFC60055)
+val PinkLight = Color(0xFFFF79B0)
+
+val CardBorderPink = Color(0xFFFF598E)
+
+private val PinkLightColorScheme = lightColorScheme(
+    primary = PinkPrimary,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD0E4FF),
-    onPrimaryContainer = Color(0xFF0A467E),
-    secondary = Color(0xFFFF6D00),      // Теплий помаранчевий
+    primaryContainer = PinkLight,
+    onPrimaryContainer = Color(0xFF3F0021),
+
+    secondary = Color(0xFF9C27B0),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFE5D0),
-    onSecondaryContainer = Color(0xFF772D00),
-    tertiary = Color(0xFF4CAF50),       // Зелений для успіху
-    background = Color(0xFFF5F5F5),     // Світлий сірий фон
+    secondaryContainer = Color(0xFFE8D5F0),
+    onSecondaryContainer = Color(0xFF3E0046),
+
+    tertiary = Color(0xFFFF9800),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFFFE0B2),
+    onTertiaryContainer = Color(0xFF522700),
+
+    background = Color(0xFFFEF0F3),
+    onBackground = Color(0xFF1A1A1A),
+
     surface = Color.White,
-    onSurface = Color(0xFF1E1E1E),
-    surfaceVariant = Color(0xFFEEF1F4),
+    onSurface = Color(0xFF1A1A1A),
+
+    surfaceVariant = Color(0xFFFFE2EA),
     onSurfaceVariant = Color(0xFF4A4A4A),
-    error = Color(0xFFE53935)           // Яскравий червоний для помилок
+
+    error = Color(0xFFE53935),
+    onError = Color.White
 )
 
-// Темна кольорова схема - елегантна та зручна для очей
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF64B5F6),        // Яскраво-блакитний
-    onPrimary = Color(0xFF002D58),
-    primaryContainer = Color(0xFF0A467E),
-    onPrimaryContainer = Color(0xFFD0E4FF),
-    secondary = Color(0xFFFFAB40),      // Теплий помаранчевий
-    onSecondary = Color(0xFF4A2700),
-    secondaryContainer = Color(0xFF703E00),
-    onSecondaryContainer = Color(0xFFFFE0B2),
-    tertiary = Color(0xFF81C784),       // М'який зелений
-    background = Color(0xFF121212),     // Темний фон
-    surface = Color(0xFF1E1E1E),        // Трохи світліший за фон
-    onSurface = Color(0xFFE0E0E0),
-    surfaceVariant = Color(0xFF2C2C2C),
-    onSurfaceVariant = Color(0xFFBDBDBD),
-    error = Color(0xFFEF5350)           // Яскравий червоний для помилок
+private val PinkDarkColorScheme = darkColorScheme(
+    primary = PinkLight,
+    onPrimary = Color(0xFF3F0021),
+    primaryContainer = PinkPrimary,
+    onPrimaryContainer = Color(0xFFFFD9E3),
+
+    secondary = Color(0xFFCE93D8),
+    onSecondary = Color(0xFF3E0046),
+    secondaryContainer = Color(0xFF6C1B85),
+    onSecondaryContainer = Color(0xFFEED6F6),
+
+    tertiary = Color(0xFFFFB74D),
+    onTertiary = Color(0xFF522700),
+    tertiaryContainer = Color(0xFFB36A00),
+    onTertiaryContainer = Color(0xFFFFE0B2),
+
+    background = Color(0xFF2C1A21),
+    onBackground = Color(0xFFF5F5F5),
+
+    surface = Color(0xFF3A2530),
+    onSurface = Color(0xFFF5F5F5),
+
+    surfaceVariant = Color(0xFF442631),
+    onSurfaceVariant = Color(0xFFD9D9D9),
+
+    error = Color(0xFFEF5350),
+    onError = Color.White
 )
 
 @Composable
 fun MemoGameTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -65,22 +90,19 @@ fun MemoGameTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> PinkDarkColorScheme
+        else -> PinkLightColorScheme
     }
 
-    // Налаштовуємо колір статус бару більш безпечним способом
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
 
-            // Більш безпечний спосіб налаштування зовнішнього вигляду статус-бару
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val flags = window.decorView.systemUiVisibility
                 if (!darkTheme) {
-                    // Встановлюємо світлі іконки для темного фону і навпаки
                     window.decorView.systemUiVisibility = flags or android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 } else {
                     window.decorView.systemUiVisibility = flags and android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()

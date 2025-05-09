@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,13 +22,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.memogame.model.Level
+import com.example.memogame.ui.theme.CardBorderPink
 import com.example.memogame.util.formatTime
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,8 +52,9 @@ fun LevelItem(
             defaultElevation = if (isLocked) 1.dp else 4.dp
         ),
         border = if (level.stars == 3)
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        else null
+            BorderStroke(2.dp, CardBorderPink)
+        else null,
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
@@ -63,7 +62,6 @@ fun LevelItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Ліва частина з основною інформацією
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -85,7 +83,6 @@ fun LevelItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Прогрес проходження з анімованим прогрес-баром
                 if (level.stars > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -96,7 +93,6 @@ fun LevelItem(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        // Використовуємо анімований прогрес-бар замість стандартного
                         AnimatedColorProgressBar(
                             progress = level.stars / 3f,
                             modifier = Modifier.width(100.dp),
@@ -115,7 +111,6 @@ fun LevelItem(
                 }
             }
 
-            // Права частина зі зірками або іконкою замка
             if (isLocked) {
                 Icon(
                     imageVector = Icons.Default.Lock,
@@ -128,7 +123,8 @@ fun LevelItem(
                     StarRating(
                         stars = level.stars,
                         maxStars = 3,
-                        starSize = 24.dp
+                        starSize = 24.dp,
+                        animated = true
                     )
 
                     if (level.stars == 3) {

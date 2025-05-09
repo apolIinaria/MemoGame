@@ -17,7 +17,6 @@ class LevelSelectionViewModel(private val repository: GameRepository) : ViewMode
         emptyList()
     )
 
-    // Додаємо доступ до інформації про користувача
     val user: StateFlow<UserEntity> = repository.user.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),

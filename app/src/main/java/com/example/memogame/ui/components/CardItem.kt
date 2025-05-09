@@ -8,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -45,24 +45,17 @@ fun CardItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Перевіряємо, чи це малий екран для оптимізації розмірів
     val configuration = LocalConfiguration.current
     val isSmallScreen = configuration.screenWidthDp < 400
 
-    // Оптимізовані відступи залежно від екрану
-    val innerPadding = if (isSmallScreen) 4.dp else 8.dp
     val elevation = if (card.isMatched) 1.dp else if (isSmallScreen) 2.dp else 4.dp
 
-    // Оптимізуємо пропорції карток
-    val aspectRatio = 0.9f  // Квадратні картки з невеликим запасом
+    val aspectRatio = 0.9f
 
-    // Механізм блокування кліків з безпечним збереженням стану
     val clickable = rememberSaveable { mutableStateOf(true) }
 
-    // Створюємо CoroutineScope, прив'язаний до життєвого циклу компонента
     val scope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
 
-    // Відстежуємо життєвий цикл для правильного очищення ресурсів
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -79,27 +72,23 @@ fun CardItem(
         }
     }
 
-    // Налаштування анімації з більш безпечними параметрами
     val rotation by animateFloatAsState(
         targetValue = if (card.isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 300, // Більш плавна анімація
+            durationMillis = 300,
             easing = FastOutSlowInEasing
         ),
         label = "card_rotation"
     )
 
-    // Затемнення картки, якщо вона вже знайдена (matched)
     val alpha = if (card.isMatched) 0.7f else 1.0f
 
-    // Додаємо невелике масштабування для ефекту наведення (simulating hovering effect)
     val scale by animateFloatAsState(
         targetValue = if (card.isFlipped && !card.isMatched) 1.05f else 1.0f,
         animationSpec = tween(150),
         label = "card_scale"
     )
 
-    // Базовий модифікатор для картки
     val cardModifier = modifier
         .aspectRatio(aspectRatio)
         .shadow(elevation, shape = CardDefaults.shape)
@@ -108,25 +97,22 @@ fun CardItem(
             rotationY = rotation
             scaleX = scale
             scaleY = scale
-            cameraDistance = 12f * density // Збільшено для плавнішої анімації
+            cameraDistance = 12f * density
             this.alpha = alpha
         }
         .clickable(
             enabled = !card.isMatched && !card.isFlipped && clickable.value,
             onClick = {
                 if (clickable.value) {
-                    clickable.value = false // Блокуємо повторні кліки
+                    clickable.value = false
 
-                    // Викликаємо обробник кліку
                     onClick()
 
-                    // Використовуємо CoroutineScope замість Handler для розблокування з затримкою
                     scope.launch {
                         try {
-                            delay(800) // Достатньо часу для завершення анімації
+                            delay(800)
                             clickable.value = true
                         } catch (e: Exception) {
-                            // Розблоковуємо в разі помилки щоб уникнути "вічного" блокування
                             clickable.value = true
                         }
                     }
@@ -138,16 +124,14 @@ fun CardItem(
         modifier = cardModifier,
         elevation = CardDefaults.cardElevation(defaultElevation = elevation),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = Color(0xFFFFB4CC)
+        ),
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            // Використовуємо умову з анімованим порогом для уникнення мерехтіння
             if (rotation > 90f) {
-                // Лицьова сторона (з зображенням)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -157,30 +141,25 @@ fun CardItem(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    // Використовуємо AsyncImage замість Image для ефективнішого завантаження
                     AsyncImage(
                         model = card.imageRes,
                         contentDescription = null,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentScale = ContentScale.Fit
+                            .fillMaxSize(),
+                        contentScale = ContentScale.FillBounds
                     )
                 }
             } else {
-                // Зворотна сторона (закрита)
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primary),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Використовуємо AsyncImage для зворотної сторони також
                     AsyncImage(
                         model = R.drawable.card_back,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(0.8f),
-                        contentScale = ContentScale.Fit
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds
                     )
                 }
             }

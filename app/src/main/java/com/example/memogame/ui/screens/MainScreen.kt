@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
@@ -34,11 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,11 +48,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.memogame.MemoGameApplication
+import com.example.memogame.ui.theme.PinkDark
+import com.example.memogame.ui.theme.PinkLight
+import com.example.memogame.ui.theme.PinkPrimary
 import com.example.memogame.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,17 +76,17 @@ fun MainScreen(
 
     val context = LocalContext.current
 
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            PinkLight.copy(alpha = 0.4f),
+            Color.White.copy(alpha = 0.9f)
+        )
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
+            .background(gradientBrush)
     ) {
         Column(
             modifier = Modifier
@@ -98,29 +96,35 @@ fun MainScreen(
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Заголовок
             Box(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                PinkPrimary,
+                                PinkDark
+                            )
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "S&P",
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = "Логотип гри",
+                    tint = Color.White,
+                    modifier = Modifier.size(48.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Гра Мемо",
+                text = "Мемо Гра",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = PinkDark
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -133,7 +137,6 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Інформаційна картка
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,18 +207,22 @@ fun MainScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Кнопка початку гри
             Button(
                 onClick = onStartClick,
                 modifier = Modifier
                     .height(56.dp)
                     .fillMaxWidth(0.8f)
                     .clip(RoundedCornerShape(28.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
@@ -234,23 +241,28 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Кнопка "Про додаток"
             ElevatedButton(
-                onClick = { showAboutDialog = true }
+                onClick = { showAboutDialog = true },
+                colors = ButtonDefaults.elevatedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Info,
-                    contentDescription = "Про додаток"
+                    contentDescription = "Про гру",
+                    tint = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                Text("Про додаток")
+                Text(
+                    "Про гру",
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Кнопка скидання прогресу
             OutlinedButton(
                 onClick = { showResetDialog = true },
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -268,7 +280,6 @@ fun MainScreen(
             }
         }
 
-        // Діалог "Про додаток"
         if (showAboutDialog) {
             AlertDialog(
                 onDismissRequest = { showAboutDialog = false },
@@ -295,7 +306,7 @@ fun MainScreen(
                 text = {
                     Column {
                         Text(
-                            text = "Гра Мемо - це захоплююча гра на тренування пам'яті.",
+                            text = "Мемо Гра - це захоплююча гра на тренування пам'яті.",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -305,7 +316,7 @@ fun MainScreen(
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Text(
-                            text = "Розробники: Новомлинець Поліна та Болобан Софія ",
+                            text = "Розробник: Новомлинець Поліна та Болобан Софія",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
@@ -331,7 +342,10 @@ fun MainScreen(
                 },
                 confirmButton = {
                     Button(
-                        onClick = { showAboutDialog = false }
+                        onClick = { showAboutDialog = false },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
                     ) {
                         Text("Зрозуміло")
                     }
@@ -340,7 +354,6 @@ fun MainScreen(
             )
         }
 
-        // Діалог підтвердження скидання прогресу
         if (showResetDialog) {
             var isResetting by remember { mutableStateOf(false) }
 
@@ -374,12 +387,10 @@ fun MainScreen(
                         onClick = {
                             isResetting = true
 
-                            // Викликаємо метод скидання бази даних
                             application.resetDatabase {
                                 isResetting = false
                                 showResetDialog = false
 
-                                // Показуємо повідомлення про успішне скидання
                                 Toast.makeText(
                                     context,
                                     "Прогрес скинуто успішно",

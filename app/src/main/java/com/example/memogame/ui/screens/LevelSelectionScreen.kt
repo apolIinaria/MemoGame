@@ -1,5 +1,6 @@
 package com.example.memogame.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +25,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.memogame.MemoGameApplication
-import com.example.memogame.ui.components.AnimatedColorProgressBar
 import com.example.memogame.ui.components.LevelItem
+import com.example.memogame.ui.theme.PinkLight
 import com.example.memogame.viewmodel.LevelSelectionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,10 +49,15 @@ fun LevelSelectionScreen(
     val levels by viewModel.levels.collectAsState()
     val user by viewModel.user.collectAsState()
 
-    // Обчислюємо загальний прогрес проходження гри (відсоток зірок від максимально можливих)
-    val maxPossibleStars = levels.size * 3 // 3 зірки на кожен рівень
+    val maxPossibleStars = levels.size * 3
     val currentTotalStars = user.totalStars
-    val gameProgress = if (maxPossibleStars > 0) currentTotalStars.toFloat() / maxPossibleStars else 0f
+
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            PinkLight.copy(alpha = 0.3f),
+            Color.White.copy(alpha = 0.9f)
+        )
+    )
 
     Scaffold(
         topBar = {
@@ -79,12 +87,12 @@ fun LevelSelectionScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(gradientBrush)
                 .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Інформація про загальну кількість зірок і прогрес гри
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -98,14 +106,12 @@ fun LevelSelectionScreen(
                     )
                 }
 
-                // Список рівнів - всі рівні відкриті одразу
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(levels) { level ->
-                        // Всі рівні відкриті (isLocked = false)
                         LevelItem(
                             level = level,
                             isLocked = false,
